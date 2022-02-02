@@ -50,3 +50,6 @@ We have:
   * Join a game
   * Write to a square
   * Read from a square
+
+## Contribution Policy
+This project is open to outside contributions.
