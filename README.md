@@ -1,17 +1,13 @@
-# MultiplayerPrototype
-Proof-of-concept (hopefully) for a multiplayer game, with server-side state modified by n end-users and displayed and refreshed in real-time
-https://www.codecademy.com/forum_questions/535061fc52f86345af0000fe
+# Multiplayer Game API
+Stateful web API for n-player multiplayer games. Built using AWS Lambda and Amazon DynamoDB.
 
-Vanilla JavaScript POST Request tutorial:
-https://gomakethings.com/how-to-send-data-to-an-api-with-the-vanilla-js-fetch-method/
-
-
-## Purpose:
-The purpose of this project is to allow for two players on different machines to be able to play a game of tictactoe. Players will alternate turns until the game finishes. This game is a proof-of-concept of C4C’s multiplayer game infrastructure, which will allow future games to be played between multiple players simultaneously. 
-
-## Documentation:
+## Documentation
 /{gameid} GET: send a gameid to getGameState, which returns the current state of the game at that gameid after the other player moves.
+
 /{gameid} POST: send a gameid to getItemUpdated, which updates the game state, and returns whether it worked or not.
+
+## Examples
+We have one example project, a 2-player tic-tac-toe game. Players alternate turns until the game is over. This project is based on [this forum post](https://www.codecademy.com/forum_questions/535061fc52f86345af0000fe). If you are unfamiliar with making HTTP requests in JavaScript, you can read up on [the Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch).
 
 ## Notes:
 We have:
