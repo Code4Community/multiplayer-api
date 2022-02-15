@@ -1,5 +1,5 @@
 # Multiplayer Game API
-Stateful web API for n-player multiplayer games. Built using AWS Lambda and Amazon DynamoDB.
+Stateful web API for n-player multiplayer games. Built using AWS Lambda and Amazon DynamoDB. See our example project [here](https://code4community.github.io/multiplayer-api/examples/).
 
 ## Documentation
 /{gameid} GET: send a gameid to getGameState, which returns the current state of the game at that gameid after the other player moves.
