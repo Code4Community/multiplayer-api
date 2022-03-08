@@ -1,8 +1,13 @@
-let gameId = '98563';
+
+let gameId = '';
 //player 1: O, player 2: X
-let player = 2;
+let player;
 let boardApiBaseUrl = "https://6f6qdmvc88.execute-api.us-east-2.amazonaws.com";
 let stage = "dev";
+
+let hasLoaded = false;
+
+
 
 // ENUMERATIONS
 // A Square can have an X, an O, or be blank. Use this enum to denote the state
@@ -34,12 +39,14 @@ let turnCount = 0;
 let winState = WIN_STATES.NO_WINNER;
 
 // This is the official starting state of the game. Everything is blank.
-let gameState = [
+const STARTING_STATE = [
     // Column 0          Column 1            Column 2
     [squareStates.BLANK, squareStates.BLANK, squareStates.BLANK], // Horizontal row 0
     [squareStates.BLANK, squareStates.BLANK, squareStates.BLANK], // Horizontal row 1
     [squareStates.BLANK, squareStates.BLANK, squareStates.BLANK], // Horizontal row 2
 ];
+
+let gameState = STARTING_STATE;
 
 // Here's a testing game state with some X's and O's filled in.
 let testGameState = [
@@ -65,7 +72,7 @@ function saveGameState() {
         },
         redirect: 'follow', // manual, *follow, error
         referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify(gameState) // body data type must match "Content-Type" header
+        body: JSON.stringify({ingame: true, state: gameState}) // body data type must match "Content-Type" header
     };
 
     fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
@@ -84,6 +91,97 @@ function saveGameState() {
 
             // Now that we have saved off our player's move, hit the server to look for the other player's move
             checkUpdateGameState();
+        })
+        // Else if this was a failure, log that to the console.
+        .catch(function (error) {
+            console.warn('Something went wrong.', error);
+        });
+}
+
+
+// Delete game
+function deleteGame() {
+    let options = {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'json',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify({ingame: false, players: [false, false]})
+    };
+
+    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                return Promise.reject(response);
+            }
+        })
+        // If success, print out the data to the console
+        .then(function (data) {
+            console.log("Deleted game state: ");
+            console.log(data);
+            hasLoaded = false;
+            playerExisting = [false, false];
+            location.reload();
+
+            // Now that we have saved off our player's move, hit the server to look for the other player's move
+            // checkUpdateGameState();
+        })
+        // Else if this was a failure, log that to the console.
+        .catch(function (error) {
+            console.warn('Something went wrong.', error);
+        });
+}
+
+
+
+function savePlayer() {
+
+    let options = {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'json',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify({ingame: false, players: playersExisting}) // body data type must match "Content-Type" header
+    };
+
+    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                return Promise.reject(response);
+            }
+        })
+        // If success, print out the data to the console
+        .then(function (data) {
+            console.log("Saved Game State, server response: ");
+            console.log(data);
+            hasLoaded = true;
+
+            // Now that we have saved off our player's move, hit the server to look for the other player's move
+            // checkUpdateGameState();
         })
         // Else if this was a failure, log that to the console.
         .catch(function (error) {
@@ -125,11 +223,18 @@ function getCanvCtxt() {
 
 // Runs on window.onload. Sets up the board, players, and renders the state on the canvas
 function setUpGame() {
+
     setUpBoard();
     makePlayers();
     // TODO: Decide if the state really needs to be rendered here
     renderState();
-    checkUpdateGameState();
+
+    // Wait for two players to exist
+    // Find if players if players exist
+    getPlayers();
+    
+
+    
 }
 
 // Draws the Tic-Tac-Toe board itself.
@@ -288,10 +393,14 @@ function checkHandleWin() {
     if (winState === WIN_STATES.O_WIN || winState === WIN_STATES.X_WIN) {
         winningPlayer = getWinningPlayer();
         alert("Player " + winningPlayer.id + " has won!");
+        deleteGame();
     }
     else if (winState === WIN_STATES.DRAW) {
         alert("The match is a draw!");
+        deleteGame();
     }
+    
+    
 }
 
 // Call this after any state changes. This will draw the X's and O's on the board according to the state
@@ -320,27 +429,27 @@ function setWinState() {
     //Wins with top left
     if (gameState[0][0] != null && ((gameState[0][0] == gameState[0][1] && gameState[0][0] == gameState[0][2] && gameState[0][1] == gameState[0][2]) || (gameState[0][0] == gameState[1][1] && gameState[0][0] == gameState[2][2] && gameState[1][1] == gameState[2][2]) || (gameState[0][0] == gameState[1][0] && gameState[0][0] == gameState[2][0] && gameState[1][0] == gameState[2][0]))) {
         if (gameState[0][0] == squareStates.O) {
-            winState = WIN_STATES.O_WIN;
-        } else {
             winState = WIN_STATES.X_WIN;
+        } else {
+            winState = WIN_STATES.O_WIN;
         }
         return;
     }
     //Wins overlapping middle
     if (gameState[1][1] != null && ((gameState[1][1] == gameState[0][1] && gameState[1][1] == gameState[2][1] && gameState[0][1] == gameState[2][1]) || (gameState[1][1] == gameState[1][0] && gameState[1][1] == gameState[1][2] && gameState[1][0] == gameState[1][2]) || (gameState[1][1] == gameState[2][0] && gameState[1][1] == gameState[0][2] && gameState[2][0] == gameState[0][2]))) {
         if (gameState[1][1] == squareStates.O) {
-            winState = WIN_STATES.O_WIN;
-        } else {
             winState = WIN_STATES.X_WIN;
+        } else {
+            winState = WIN_STATES.O_WIN;
         }
         return;
     }
     //Wins overlapping bottom right
     if (gameState[2][2] != null && ((gameState[0][2] == gameState[1][2] && gameState[0][2] == gameState[2][2] && gameState[1][2] == gameState[2][2]) || (gameState[2][0] == gameState[2][1] && gameState[2][0] == gameState[2][2] && gameState[2][0] == gameState[2][2]))) {
         if (gameState[2][2] == squareStates.O) {
-            winState = WIN_STATES.O_WIN;
-        } else {
             winState = WIN_STATES.X_WIN;
+        } else {
+            winState = WIN_STATES.O_WIN;
         }
         return;
     }
@@ -386,14 +495,23 @@ function checkUpdateGameState() {
         // When we are done converting to json, do something with it
         .then((responseAsJson) => {
             boardString = responseAsJson.Item.Board.S;
+
+            
+
             boardFromServer = JSON.parse(boardString);
+            if (boardFromServer.ingame == true)
+                boardFromServer = boardFromServer.state;
+            else {
+                getPlayers();
+                return;
+            }
 
             console.log("Fetched board");
             console.log(boardFromServer);
 
             // Process the response
             if (compareStates(gameState, boardFromServer)) {
-                setTimeout(checkUpdateGameState, 1000)
+                setTimeout(checkUpdateGameState, 1);
                 console.log("board was the same");
             }
             else {
@@ -402,7 +520,7 @@ function checkUpdateGameState() {
                 // Update and rerender the board
                 gameState = boardFromServer;
                 renderState();
-                
+                checkHandleWin();
                 // player switch to be your turn
                 switchPlayers();
                 
@@ -410,6 +528,89 @@ function checkUpdateGameState() {
                     setTimeout(checkUpdateGameState, 1000);
                 }
                 
+            }
+        });
+}
+
+
+
+// Sets up the options and calls the function to check for and update the game state
+function getPlayers() {
+    let options = {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'text',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        //body: JSON.stringify(data) // body data type must match "Content-Type" header
+    };
+
+    // Call the initial function
+    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
+        // When we get a response back from the server, convert it to json
+        .then(
+            function(response) {
+                return response.json()
+            }
+        )
+        // When we are done converting to json, do something with it
+        .then((responseAsJson) => {
+            boardString = responseAsJson.Item.Board.S;
+            boardFromServer = JSON.parse(boardString);
+
+            console.log("Fetched players");
+            console.log(boardFromServer);
+            if (boardFromServer.ingame == true) {
+                if (hasLoaded) {
+                    checkUpdateGameState();
+                } else {
+                    alert("Sorry, game is full :(");
+                }
+
+                return;
+            } else {
+                boardFromServer = boardFromServer.players;
+            }
+
+            // Process the response
+            playersExisting = boardFromServer;
+            if (hasLoaded) {
+
+                if (playersExisting[0] && playersExisting[1]) {
+                    // Start the game
+                    gameState = STARTING_STATE;
+                    saveGameState();                   
+                } else {
+                    setTimeout(getPlayers, 1000);
+                }
+                    
+
+            } else {
+                if (!playersExisting[0] && !playersExisting[1]) {
+                    player = Math.floor(Math.random() * 2) + 1;
+                    playersExisting[player - 1] = true;
+                    savePlayer();
+                    setTimeout(getPlayers, 1000);
+                } else if (playersExisting[0] && playersExisting[1]) {
+                    alert("Game is full, sorry :(");
+                } else {
+                    
+                    player = 1;
+                    if (!playersExisting[1])
+                        player = 2;
+                    playersExisting = [true, true];
+                    savePlayer();
+                    checkUpdateGameState();
+
+                }
             }
         });
 }
@@ -425,5 +626,226 @@ function compareStates(gameState, boardFromServer) {
     return true;
 }
 
+
+function beginGame() {
+    setUpBoard();
+    makePlayers();
+    // TODO: Decide if the state really needs to be rendered here
+    renderState();
+
+    // Figure out which player
+    player = Math.floor(Math.random() * 2 + 1);
+    numPlayers = 1;
+
+    // Post the game
+    let options = {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'json',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify({ingame: false, curPlayer: player, numPlayers: 1}) // body data type must match "Content-Type" header
+    };
+
+    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                return Promise.reject(response);
+            }
+        })
+        // If success, print out the data to the console
+        .then(function (data) {
+            console.log("Saved Game State, server response: ");
+            console.log(data);
+            hasLoaded = true;
+
+            // Now that we have saved off our player's move, hit the server to look for the other player's move
+            // checkUpdateGameState();
+        })
+        // Else if this was a failure, log that to the console.
+        .catch(function (error) {
+            console.warn('Something went wrong.', error);
+        });
+
+    // ---------------------------------------------------------------
+    // Wait for next player
+    setTimeout(waitForPlayer, 1000);
+    
+}
+
+
+// Sets up the options and calls the function to check for and update the game state
+function waitForPlayer() {
+    let options = {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'text',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        //body: JSON.stringify(data) // body data type must match "Content-Type" header
+    };
+
+    // Call the initial function
+    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
+        // When we get a response back from the server, convert it to json
+        .then(
+            function(response) {
+                return response.json()
+            }
+        )
+        // When we are done converting to json, do something with it
+        .then((responseAsJson) => {
+            boardString = responseAsJson.Item.Board.S;
+            boardFromServer = JSON.parse(boardString);
+
+            console.log("Fetched players");
+            console.log(boardFromServer);
+        
+            // Process the response
+            if (boardFromServer.numPlayers == 2) {
+                // Start the game
+                swtichScreen('host', 'after');
+                gameState = STARTING_STATE;
+                saveGameState();                   
+            } else {
+                setTimeout(waitForPlayer, 100);
+            }
+        });
+}
+
+
+function joinGame() {
+    setUpBoard();
+    makePlayers();
+    // TODO: Decide if the state really needs to be rendered here
+    renderState();
+
+
+    // Check if there is a game
+    gameId = document.getElementById("code-input");
+    
+
+
+    // -----------------------------------------------------------
+    let options = {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'text',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        //body: JSON.stringify(data) // body data type must match "Content-Type" header
+    };
+
+    // Call the initial function
+    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
+        // When we get a response back from the server, convert it to json
+        .then(
+            function(response) {
+                return response.json();
+            }
+        )
+        // When we are done converting to json, do something with it
+        .then((responseAsJson) => {
+
+            if (responseAsJson == "" || responseAsJson == {} || responseAsJson == "{}") {
+                alert("Sorry, game does not exist");
+                location.reload();
+                return;
+            }
+            
+            boardString = responseAsJson.Item.Board.S;
+            boardFromServer = JSON.parse(boardString);
+
+            console.log("Fetched players");
+            console.log(boardFromServer);
+            
+
+            if (boardFromServer.ingame) {
+                alert("Sorry, game is already full");
+            } else {
+                // Process the response
+                if (boardFromServer.numPlayers == 2) {
+                    alert("Sorry, game is already full");                  
+                } else {
+                    player = 1;
+                    if (boardFromServer.curPlayer == 1) {
+                        player = 2;
+                    }
+                    // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
+                    let options = {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+                        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+                        //mode: 'no-cors', // no-cors, *cors, same-origin
+                        dataType: 'json',
+                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                        credentials: 'same-origin', // include, *same-origin, omit
+                        headers: {
+                            'Content-Type': 'application/json'
+                            // 'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        redirect: 'follow', // manual, *follow, error
+                        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                        body: JSON.stringify({ingame: false, curPlayer: player, numPlayers: 2}) // body data type must match "Content-Type" header
+                    };
+                
+                    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+                        .then(function (response) {
+                            if (response.ok) {
+                                return response.json();
+                            }
+                            else {
+                                return Promise.reject(response);
+                            }
+                        })
+                        // If success, print out the data to the console
+                        .then(function (data) {
+                            console.log("Told host to start gameGame");
+                
+                            // Now that we have saved off our player's move, hit the server to look for the other player's move
+                            // checkUpdateGameState();
+                        })
+                        // Else if this was a failure, log that to the console.
+                        .catch(function (error) {
+                            console.warn('Something went wrong.', error);
+                        });
+                }
+                
+            }
+        });
+
+
+    // -----------------------------------------------------------
+    switchScreen('join','after');
+}
+
+
 // When the page is loaded, sets up the game
-window.onload = setUpGame();
+// window.onload = setUpGame();
