@@ -101,7 +101,7 @@ function saveGameState() {
 
 // Delete game
 function deleteGame() {
-    let options = {
+    /*let options = {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
         // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
@@ -142,6 +142,8 @@ function deleteGame() {
         .catch(function (error) {
             console.warn('Something went wrong.', error);
         });
+        */
+       location.reload();
 }
 
 
@@ -670,6 +672,7 @@ function beginGame() {
             console.log(data);
             hasLoaded = true;
 
+            setTimeout(waitForPlayer, 1000);
             // Now that we have saved off our player's move, hit the server to look for the other player's move
             // checkUpdateGameState();
         })
@@ -680,7 +683,7 @@ function beginGame() {
 
     // ---------------------------------------------------------------
     // Wait for next player
-    setTimeout(waitForPlayer, 1000);
+    
     
 }
 
@@ -723,7 +726,7 @@ function waitForPlayer() {
             // Process the response
             if (boardFromServer.numPlayers == 2) {
                 // Start the game
-                swtichScreen('host', 'after');
+                switchScreen('host', 'after');
                 gameState = STARTING_STATE;
                 saveGameState();                   
             } else {
@@ -741,7 +744,7 @@ function joinGame() {
 
 
     // Check if there is a game
-    gameId = document.getElementById("code-input");
+    gameId = document.getElementById("code-input").value;
     
 
 
@@ -799,7 +802,7 @@ function joinGame() {
                         player = 2;
                     }
                     // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
-                    let options = {
+                    options = {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
                         // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
                         // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
