@@ -1,4 +1,6 @@
 
+
+
 let gameId = '';
 //player 1: O, player 2: X
 let player;
@@ -56,140 +58,6 @@ let testGameState = [
     [squareStates.X, squareStates.BLANK, squareStates.BLANK], // Horizontal row 2
 ];
 
-function saveGameState() {
-
-    let options = {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'json',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify({ingame: true, state: gameState}) // body data type must match "Content-Type" header
-    };
-
-    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
-        .then(function (response) {
-            if (response.ok) {
-                return response.json();
-            }
-            else {
-                return Promise.reject(response);
-            }
-        })
-        // If success, print out the data to the console
-        .then(function (data) {
-            console.log("Saved Game State, server response: ");
-            console.log(data);
-
-            // Now that we have saved off our player's move, hit the server to look for the other player's move
-            checkUpdateGameState();
-        })
-        // Else if this was a failure, log that to the console.
-        .catch(function (error) {
-            console.warn('Something went wrong.', error);
-        });
-}
-
-
-// Delete game
-function deleteGame() {
-    /*let options = {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'json',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify({ingame: false, players: [false, false]})
-    };
-
-    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
-        .then(function (response) {
-            if (response.ok) {
-                return response.json();
-            }
-            else {
-                return Promise.reject(response);
-            }
-        })
-        // If success, print out the data to the console
-        .then(function (data) {
-            console.log("Deleted game state: ");
-            console.log(data);
-            hasLoaded = false;
-            playerExisting = [false, false];
-            location.reload();
-
-            // Now that we have saved off our player's move, hit the server to look for the other player's move
-            // checkUpdateGameState();
-        })
-        // Else if this was a failure, log that to the console.
-        .catch(function (error) {
-            console.warn('Something went wrong.', error);
-        });
-        */
-       location.reload();
-}
-
-
-
-function savePlayer() {
-
-    let options = {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'json',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify({ingame: false, players: playersExisting}) // body data type must match "Content-Type" header
-    };
-
-    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
-        .then(function (response) {
-            if (response.ok) {
-                return response.json();
-            }
-            else {
-                return Promise.reject(response);
-            }
-        })
-        // If success, print out the data to the console
-        .then(function (data) {
-            console.log("Saved Game State, server response: ");
-            console.log(data);
-            hasLoaded = true;
-
-            // Now that we have saved off our player's move, hit the server to look for the other player's move
-            // checkUpdateGameState();
-        })
-        // Else if this was a failure, log that to the console.
-        .catch(function (error) {
-            console.warn('Something went wrong.', error);
-        });
-}
 
 // Uncomment this line to start with the testing game state
 //gameState = testGameState;
@@ -221,22 +89,6 @@ function squareWidth() {
 function getCanvCtxt() {
     var c = document.getElementById("myCanvas");
     return c.getContext("2d");
-}
-
-// Runs on window.onload. Sets up the board, players, and renders the state on the canvas
-function setUpGame() {
-
-    setUpBoard();
-    makePlayers();
-    // TODO: Decide if the state really needs to be rendered here
-    renderState();
-
-    // Wait for two players to exist
-    // Find if players if players exist
-    getPlayers();
-    
-
-    
 }
 
 // Draws the Tic-Tac-Toe board itself.
@@ -466,15 +318,37 @@ function setWinState() {
     winState = WIN_STATES.DRAW;
 }
 
+function compareStates(gameState, boardFromServer) {
+    for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
+        for (let colIndex = 0; colIndex < 3; colIndex++) {
+            if (gameState[rowIndex][colIndex] !== boardFromServer[rowIndex][colIndex]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
-// Sets up the options and calls the function to check for and update the game state
-function checkUpdateGameState() {
+
+// ------------------------------------------------------------------------------------------
+// --------------------GAME LOGIC OVER, MULTIPLAYER LOGIC BELOW -----------------------------
+// ------------------------------------------------------------------------------------------
+
+const POST = 'POST';
+const GET = 'GET';
+const DELETE = 'DELETE';
+
+// AJAX function -----------------------------------------------------------------------
+// Method string is either POST, GET, or DELETE
+// String body is the stringified JSON to be stored in a post, null should be used in get or delete
+// Callback is the function called afterward given success, function called with an argument that is the response from the server in JSON
+function ajax (methodString, stringBody, callback) {
     let options = {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: methodString, // *GET, POST, PUT, DELETE, etc.
         // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
         // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
         //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'text',
+        dataType: 'json',
         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
         credentials: 'same-origin', // include, *same-origin, omit
         headers: {
@@ -482,21 +356,90 @@ function checkUpdateGameState() {
             // 'Content-Type': 'application/x-www-form-urlencoded',
         },
         redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //body: JSON.stringify(data) // body data type must match "Content-Type" header
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+         // body data type must match "Content-Type" header
+    };
+    if (methodString == POST) {
+        options.body = stringBody;
+    }
+    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                return Promise.reject(response);
+            }
+        })
+        // If success, print out the data to the console
+        .then((responseAsJson) => {
+            callback(responseAsJson);
+        })
+        // Else if this was a failure, log that to the console.
+        .catch(function (error) {
+            console.warn('Something went wrong.', error);
+        });
+}
+
+
+function saveGameState() {
+    ajax(POST, JSON.stringify({ingame: true, state: gameState}), checkUpdateGameState);
+}
+
+
+// Delete game
+function deleteGame() {
+    /*let options = {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
+        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+        //mode: 'no-cors', // no-cors, *cors, same-origin
+        dataType: 'json',
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify({ingame: false, players: [false, false]})
     };
 
-    // Call the initial function
-    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
-        // When we get a response back from the server, convert it to json
-        .then(
-            function(response) {
-                return response.json()
+    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
             }
-        )
-        // When we are done converting to json, do something with it
-        .then((responseAsJson) => {
-            boardString = responseAsJson.Item.Board.S;
+            else {
+                return Promise.reject(response);
+            }
+        })
+        // If success, print out the data to the console
+        .then(function (data) {
+            console.log("Deleted game state: ");
+            console.log(data);
+            hasLoaded = false;
+            playerExisting = [false, false];
+            location.reload();
+
+            // Now that we have saved off our player's move, hit the server to look for the other player's move
+            // checkUpdateGameState();
+        })
+        // Else if this was a failure, log that to the console.
+        .catch(function (error) {
+            console.warn('Something went wrong.', error);
+        });
+        */
+       location.reload();
+}
+
+
+
+// Sets up the options and calls the function to check for and update the game state
+function checkUpdateGameState() {
+    ajax(GET, null, (responseAsJson) =>{
+        boardString = responseAsJson.Item.Board.S;
 
             
 
@@ -531,101 +474,8 @@ function checkUpdateGameState() {
                 }
                 
             }
-        });
-}
-
-
-
-// Sets up the options and calls the function to check for and update the game state
-function getPlayers() {
-    let options = {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'text',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //body: JSON.stringify(data) // body data type must match "Content-Type" header
-    };
-
-    // Call the initial function
-    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
-        // When we get a response back from the server, convert it to json
-        .then(
-            function(response) {
-                return response.json()
-            }
-        )
-        // When we are done converting to json, do something with it
-        .then((responseAsJson) => {
-            boardString = responseAsJson.Item.Board.S;
-            boardFromServer = JSON.parse(boardString);
-
-            console.log("Fetched players");
-            console.log(boardFromServer);
-            if (boardFromServer.ingame == true) {
-                if (hasLoaded) {
-                    checkUpdateGameState();
-                } else {
-                    alert("Sorry, game is full :(");
-                }
-
-                return;
-            } else {
-                boardFromServer = boardFromServer.players;
-            }
-
-            // Process the response
-            playersExisting = boardFromServer;
-            if (hasLoaded) {
-
-                if (playersExisting[0] && playersExisting[1]) {
-                    // Start the game
-                    gameState = STARTING_STATE;
-                    saveGameState();                   
-                } else {
-                    setTimeout(getPlayers, 1000);
-                }
-                    
-
-            } else {
-                if (!playersExisting[0] && !playersExisting[1]) {
-                    player = Math.floor(Math.random() * 2) + 1;
-                    playersExisting[player - 1] = true;
-                    savePlayer();
-                    setTimeout(getPlayers, 1000);
-                } else if (playersExisting[0] && playersExisting[1]) {
-                    alert("Game is full, sorry :(");
-                } else {
-                    
-                    player = 1;
-                    if (!playersExisting[1])
-                        player = 2;
-                    playersExisting = [true, true];
-                    savePlayer();
-                    checkUpdateGameState();
-
-                }
-            }
-        });
-}
-
-function compareStates(gameState, boardFromServer) {
-    for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
-        for (let colIndex = 0; colIndex < 3; colIndex++) {
-            if (gameState[rowIndex][colIndex] !== boardFromServer[rowIndex][colIndex]) {
-                return false;
-            }
-        }
-    }
-    return true;
+    });
+    
 }
 
 
@@ -640,99 +490,32 @@ function beginGame() {
     numPlayers = 1;
 
     // Post the game
-    let options = {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'json',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify({ingame: false, curPlayer: player, numPlayers: 1}) // body data type must match "Content-Type" header
-    };
-
-    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
-        .then(function (response) {
-            if (response.ok) {
-                return response.json();
-            }
-            else {
-                return Promise.reject(response);
-            }
-        })
-        // If success, print out the data to the console
-        .then(function (data) {
-            console.log("Saved Game State, server response: ");
-            console.log(data);
-            hasLoaded = true;
-
-            setTimeout(waitForPlayer, 1000);
-            // Now that we have saved off our player's move, hit the server to look for the other player's move
-            // checkUpdateGameState();
-        })
-        // Else if this was a failure, log that to the console.
-        .catch(function (error) {
-            console.warn('Something went wrong.', error);
-        });
-
-    // ---------------------------------------------------------------
-    // Wait for next player
-    
-    
+    ajax(POST, JSON.stringify({ingame: false, curPlayer: player, numPlayers: 1}), () => {
+        hasLoaded = true;
+        setTimeout(waitForPlayer, 1000);
+    });
 }
 
 
 // Sets up the options and calls the function to check for and update the game state
 function waitForPlayer() {
-    let options = {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'text',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //body: JSON.stringify(data) // body data type must match "Content-Type" header
-    };
+    ajax(GET, null, (responseAsJson) => {
+        boardString = responseAsJson.Item.Board.S;
+        boardFromServer = JSON.parse(boardString);
 
-    // Call the initial function
-    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
-        // When we get a response back from the server, convert it to json
-        .then(
-            function(response) {
-                return response.json()
-            }
-        )
-        // When we are done converting to json, do something with it
-        .then((responseAsJson) => {
-            boardString = responseAsJson.Item.Board.S;
-            boardFromServer = JSON.parse(boardString);
-
-            console.log("Fetched players");
-            console.log(boardFromServer);
-        
-            // Process the response
-            if (boardFromServer.numPlayers == 2) {
-                // Start the game
-                switchScreen('host', 'after');
-                gameState = STARTING_STATE;
-                saveGameState();                   
-            } else {
-                setTimeout(waitForPlayer, 100);
-            }
-        });
+        console.log("Fetched players");
+        console.log(boardFromServer);
+    
+        // Process the response
+        if (boardFromServer.numPlayers == 2) {
+            // Start the game
+            switchScreen('host', 'after');
+            gameState = STARTING_STATE;
+            saveGameState();                   
+        } else {
+            setTimeout(waitForPlayer, 100);
+        }
+    });
 }
 
 
@@ -747,104 +530,39 @@ function joinGame() {
     gameId = document.getElementById("code-input").value;
     
 
+    ajax(GET, null, (responseAsJson) => {
 
-    // -----------------------------------------------------------
-    let options = {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
-        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-        //mode: 'no-cors', // no-cors, *cors, same-origin
-        dataType: 'text',
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer' // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //body: JSON.stringify(data) // body data type must match "Content-Type" header
-    };
+        if (responseAsJson == "" || responseAsJson == {} || responseAsJson == "{}") {
+            alert("Sorry, game does not exist");
+            location.reload();
+            return;
+        }
+        
+        boardString = responseAsJson.Item.Board.S;
+        boardFromServer = JSON.parse(boardString);
 
-    // Call the initial function
-    fetch(boardApiBaseUrl + "/" + stage + "/tictactoe" + "/" + gameId + "/", options)
-        // When we get a response back from the server, convert it to json
-        .then(
-            function(response) {
-                return response.json();
-            }
-        )
-        // When we are done converting to json, do something with it
-        .then((responseAsJson) => {
+        console.log("Fetched players");
+        console.log(boardFromServer);
+        
 
-            if (responseAsJson == "" || responseAsJson == {} || responseAsJson == "{}") {
-                alert("Sorry, game does not exist");
-                location.reload();
-                return;
-            }
-            
-            boardString = responseAsJson.Item.Board.S;
-            boardFromServer = JSON.parse(boardString);
-
-            console.log("Fetched players");
-            console.log(boardFromServer);
-            
-
-            if (boardFromServer.ingame) {
-                alert("Sorry, game is already full");
+        if (boardFromServer.ingame) {
+            alert("Sorry, game is already full");
+        } else {
+            // Process the response
+            if (boardFromServer.numPlayers == 2) {
+                alert("Sorry, game is already full");                  
             } else {
-                // Process the response
-                if (boardFromServer.numPlayers == 2) {
-                    alert("Sorry, game is already full");                  
-                } else {
-                    player = 1;
-                    if (boardFromServer.curPlayer == 1) {
-                        player = 2;
-                    }
-                    // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
-                    options = {
-                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-                        // So apparently chrome makes the response body opaque if you specify no-cors. Anyways this works without specifying a cors mode. 
-                        // https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
-                        //mode: 'no-cors', // no-cors, *cors, same-origin
-                        dataType: 'json',
-                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-                        credentials: 'same-origin', // include, *same-origin, omit
-                        headers: {
-                            'Content-Type': 'application/json'
-                            // 'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        redirect: 'follow', // manual, *follow, error
-                        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-                        body: JSON.stringify({ingame: false, curPlayer: player, numPlayers: 2}) // body data type must match "Content-Type" header
-                    };
-                
-                    fetch(boardApiBaseUrl + "/" + stage + "/" + "tictactoe" + "/" + gameId, options)
-                        .then(function (response) {
-                            if (response.ok) {
-                                return response.json();
-                            }
-                            else {
-                                return Promise.reject(response);
-                            }
-                        })
-                        // If success, print out the data to the console
-                        .then(function (data) {
-                            console.log("Told host to start gameGame");
-                
-                            // Now that we have saved off our player's move, hit the server to look for the other player's move
-                            // checkUpdateGameState();
-                        })
-                        // Else if this was a failure, log that to the console.
-                        .catch(function (error) {
-                            console.warn('Something went wrong.', error);
-                        });
+                player = 1;
+                if (boardFromServer.curPlayer == 1) {
+                    player = 2;
                 }
+                // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
+                ajax(POST, JSON.stringify({ingame: false, curPlayer: player, numPlayers: 2}), () => {console.log("Told host to start gameGame");});
                 
             }
-        });
-
-
+            
+        }
+    });
     // -----------------------------------------------------------
     switchScreen('join','after');
 }
