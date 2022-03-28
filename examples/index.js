@@ -387,6 +387,7 @@ function checkUpdateGameState() {
         if (boardFromServer.ingame == true)
             boardFromServer = boardFromServer.state;
         else {
+            setTimeout(checkUpdateGameState, 1000);
             return;
         }
 
