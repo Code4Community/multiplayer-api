@@ -495,22 +495,18 @@ function joinGame() {
         console.log(boardFromServer);
 
 
-        if (boardFromServer.ingame) {
+        if (boardFromServer.ingame || boardFromServer.numPlayers == 2) {
             alert("Sorry, game is already full");
+            location.reload();
         } else {
             // Process the response
-            if (boardFromServer.numPlayers == 2) {
-                alert("Sorry, game is already full");
-            } else {
-                player = 1;
-                if (boardFromServer.curPlayer == 1) {
-                    player = 2;
-                }
-                // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
-                ajax(POST, JSON.stringify({ ingame: false, curPlayer: player, numPlayers: 2 }), () => { console.log("Told host to start gameGame"); });
-                checkUpdateGameState();
+            player = 1;
+            if (boardFromServer.curPlayer == 1) {
+                player = 2;
             }
-
+            // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
+            ajax(POST, JSON.stringify({ ingame: false, curPlayer: player, numPlayers: 2 }), () => { console.log("Told host to start gameGame"); });
+            checkUpdateGameState();
         }
     });
     // -----------------------------------------------------------
