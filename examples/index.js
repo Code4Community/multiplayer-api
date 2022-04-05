@@ -492,6 +492,7 @@ function joinLobby(callback) {
 // Delete game
 function deleteLobby() {
     // TODO: add game deletion logic (only one player should delete the game)
+    // TODO: reopen game hosting area??
     ajax(DELETE, null, () => {});
 }
 
