@@ -35,12 +35,12 @@ let winState = WIN_STATES.NO_WINNER;
 
 // This is the official starting state of the game. Everything is blank.
 function getStartingState() {
-    return JSON.parse(JSON.stringify([
+    return [
         // Column 0          Column 1            Column 2
         [SQUARE_STATES.BLANK, SQUARE_STATES.BLANK, SQUARE_STATES.BLANK], // Horizontal row 0
         [SQUARE_STATES.BLANK, SQUARE_STATES.BLANK, SQUARE_STATES.BLANK], // Horizontal row 1
         [SQUARE_STATES.BLANK, SQUARE_STATES.BLANK, SQUARE_STATES.BLANK], // Horizontal row 2
-    ]));
+    ];
 }
 
 let gameState = getStartingState();
@@ -230,11 +230,11 @@ function checkHandleWin() {
     if (winState === WIN_STATES.O_WIN || winState === WIN_STATES.X_WIN) {
         winningPlayer = getWinningPlayer();
         alert("Player " + winningPlayer.id + " has won!");
-        deleteGame();
+        deleteLobby();
     }
     else if (winState === WIN_STATES.DRAW) {
         alert("The match is a draw!");
-        deleteGame();
+        deleteLobby();
     }
 }
 
@@ -311,9 +311,76 @@ function compareStates(gameState, boardFromServer) {
 }
 
 
+
 // ------------------------------------------------------------------------------------------
 // ---------------------------------- MULTIPLAYER LOGIC -------------------------------------
 // ------------------------------------------------------------------------------------------
+
+const hostCallback = function () {
+    setUpBoard();
+    makePlayers();
+    renderState();
+    gameState = getStartingState();
+    saveGameState();
+};
+
+const joinCallback = function () {
+    setUpBoard();
+    makePlayers();
+    renderState();
+    checkUpdateGameState();
+};
+
+
+function saveGameState() {
+    ajax(POST, JSON.stringify({ ingame: true, state: gameState }), checkUpdateGameState);
+}
+
+
+// Sets up the options and calls the function to check for and update the game state
+function checkUpdateGameState() {
+    ajax(GET, null, (responseAsJson) => {
+        boardString = responseAsJson.Item.Board.S;
+        boardFromServer = JSON.parse(boardString);
+        if (boardFromServer.ingame == true)
+            boardFromServer = boardFromServer.state;
+        else {
+            setTimeout(checkUpdateGameState, 200);
+            return;
+        }
+
+        console.log("Fetched board");
+        console.log(boardFromServer);
+
+        // Process the response
+        if (compareStates(gameState, boardFromServer)) {
+            setTimeout(checkUpdateGameState, 200);
+            console.log("board was the same");
+        }
+        else {
+            console.log("board was different");
+
+            // Update and rerender the board
+            gameState = boardFromServer;
+            renderState();
+            checkHandleWin();
+            // player switch to be your turn
+            switchPlayers();
+
+            if (!isMyTurn()) {
+                setTimeout(checkUpdateGameState, 200);
+            }
+
+        }
+    });
+}
+
+
+
+// ------------------------------------------------------------------------------------
+// --------------------------- Lobby Hosting Package Logic ----------------------------
+// ------------------------------------------------------------------------------------
+
 
 const MULTIPLAYER_API_URL = "https://6f6qdmvc88.execute-api.us-east-2.amazonaws.com";
 const STAGE = "dev";
@@ -365,115 +432,20 @@ function ajax(methodString, stringBody, callback) {
 }
 
 
-function saveGameState() {
-    ajax(POST, JSON.stringify({ ingame: true, state: gameState }), checkUpdateGameState);
-}
-
-
-// Delete game
-function deleteGame() {
-    // TODO: add game deletion logic (only one player should delete the game)
-    // ajax(DELETE, null, () => {});
-    location.reload();
-}
-
-
-
-// Sets up the options and calls the function to check for and update the game state
-function checkUpdateGameState() {
-    ajax(GET, null, (responseAsJson) => {
-        boardString = responseAsJson.Item.Board.S;
-        boardFromServer = JSON.parse(boardString);
-        if (boardFromServer.ingame == true)
-            boardFromServer = boardFromServer.state;
-        else {
-            setTimeout(checkUpdateGameState, 1000);
-            return;
-        }
-
-        console.log("Fetched board");
-        console.log(boardFromServer);
-
-        // Process the response
-        if (compareStates(gameState, boardFromServer)) {
-            setTimeout(checkUpdateGameState, 1000);
-            console.log("board was the same");
-        }
-        else {
-            console.log("board was different");
-
-            // Update and rerender the board
-            gameState = boardFromServer;
-            renderState();
-            checkHandleWin();
-            // player switch to be your turn
-            switchPlayers();
-
-            if (!isMyTurn()) {
-                setTimeout(checkUpdateGameState, 1000);
-            }
-
-        }
-    });
-}
-
-function switchScreen(oldLocation, newLocation) {
-    document.getElementById(oldLocation).style = "display:none";
-    document.getElementById(newLocation).style = "";
-}
-
-function hostGame() {
+// General Host lobby function
+// Callback is function to run once game has started
+function hostLobby (callback) {
     switchScreen('before', 'host');
-    gameId = Math.floor(Math.random() * 1000000);
+    const highestID = 1000000;
+    gameId = Math.floor(Math.random() * highestID);
     document.getElementById("code").value = gameId;
-    beginGame();
-}
-
-function beginGame() {
-    setUpBoard();
-    makePlayers();
-    // TODO: Decide if the state really needs to be rendered here
-    renderState();
-
-    // Figure out which player
-    player = Math.floor(Math.random() * 2 + 1);
-    numPlayers = 1;
-
-    // Post the game
-    ajax(POST, JSON.stringify({ ingame: false, curPlayer: player, numPlayers: 1 }), () => {
-        hasLoaded = true;
-        setTimeout(waitForPlayer, 1000);
-    });
+    beginGame(callback);
 }
 
 
-// Sets up the options and calls the function to check for and update the game state
-function waitForPlayer() {
-    ajax(GET, null, (responseAsJson) => {
-        boardString = responseAsJson.Item.Board.S;
-        boardFromServer = JSON.parse(boardString);
-
-        console.log("Fetched players");
-        console.log(boardFromServer);
-
-        // Process the response
-        if (boardFromServer.numPlayers == 2) {
-            // Start the game
-            switchScreen('host', 'after');
-            gameState = getStartingState();
-            saveGameState();
-        } else {
-            setTimeout(waitForPlayer, 1000);
-        }
-    });
-}
-
-
-function joinGame() {
-    setUpBoard();
-    makePlayers();
-    // TODO: Decide if the state really needs to be rendered here
-    renderState();
+// Join a lobby, given a callback function to run once done
+function joinLobby(callback) {
+ 
 
 
     // Check if there is a game
@@ -508,7 +480,7 @@ function joinGame() {
                 }
                 // TODO: POST THE NEW THING TELLING THE HOST TO START THE GAME -------------------------------------------------
                 ajax(POST, JSON.stringify({ ingame: false, curPlayer: player, numPlayers: 2 }), () => { console.log("Told host to start gameGame"); });
-                checkUpdateGameState();
+                callback();
             }
 
         }
@@ -516,3 +488,61 @@ function joinGame() {
     // -----------------------------------------------------------
     switchScreen('join', 'after');
 }
+
+// Delete game
+function deleteLobby() {
+    // TODO: add game deletion logic (only one player should delete the game)
+    ajax(DELETE, null, () => {});
+}
+
+
+
+// ------------------------------------------------------------------------------------
+// ---------- Package helper functions (not used directly by client) ------------------
+// ------------------------------------------------------------------------------------
+
+// Switch the screen
+function switchScreen(oldLocation, newLocation) {
+    document.getElementById(oldLocation).style = "display:none";
+    document.getElementById(newLocation).style = "";
+}
+
+
+function beginGame(callback) {
+    
+
+    // Figure out which player
+    player = Math.floor(Math.random() * 2 + 1);
+    numPlayers = 1;
+
+    // Post the game
+    ajax(POST, JSON.stringify({ ingame: false, curPlayer: player, numPlayers: 1 }), () => {
+        hasLoaded = true;
+        setTimeout(()=>{waitForPlayer(callback)}, 200);
+    });
+}
+
+
+// Sets up the options and calls the function to check for and update the game state
+function waitForPlayer(callback) {
+    ajax(GET, null, (responseAsJson) => {
+        boardString = responseAsJson.Item.Board.S;
+        boardFromServer = JSON.parse(boardString);
+
+        console.log("Fetched players");
+        console.log(boardFromServer);
+
+        // Process the response
+        if (boardFromServer.numPlayers == 2) {
+            // Start the game
+            switchScreen('host', 'after');
+            console.log(callback);
+            callback();
+            
+        } else {
+            setTimeout(()=>{waitForPlayer(callback)}, 200);
+        }
+    });
+}
+
+
